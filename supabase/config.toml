@@ -1,2 +1,5 @@
 [functions.search-products]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

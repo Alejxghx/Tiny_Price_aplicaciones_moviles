@@ -1,77 +1,45 @@
-# Conectar TinyPrice con búsquedas reales
+# Configuración remota y transición segura
 
-Estado actualizado: proyecto `Tiny_Price` conectado, función `search-products` desplegada y ACTIVE (versión 4), secreto guardado por el propietario y búsqueda real HTTP 200 comprobada con seis fuentes. URL pública: `https://ddzgaqjsoxsohkrsoowj.supabase.co`.
+Proyecto: `ddzgaqjsoxsohkrsoowj` (Tiny_Price), URL `https://ddzgaqjsoxsohkrsoowj.supabase.co`.
 
-El manejador acepta una clave sola o una clave única dentro de una etiqueta/prompt copiado. El texto jamás se ejecuta ni se registra; dos claves distintas se consideran configuración ambigua. Para futuras rotaciones, guarda únicamente la clave.
+## Estado verificado
 
-La captura compartida muestra una clave privada de TinyFish. El propietario debe revocarla, crear otra y guardarla exclusivamente en Supabase Secrets. No se copió esa clave al repositorio ni se ejecutó el prompt de instalación mostrado en la captura.
+El laboratorio original funciona: `search-products` versión 4 devolvió HTTP 200 con seis fuentes reales. El secreto TinyFish fue guardado por el propietario. Las nuevas migraciones de cuotas están aplicadas y probadas; los cambios de autenticación todavía requieren activar el proveedor antes de sustituir esa función.
 
-## 1. Crear TinyFish
+## Activación necesaria del propietario
 
-Abre el registro oficial desde el enlace del paso 3 del [codelab](https://epanchanaf.github.io/tinyprice-codelab/#step-2). Ya creaste la cuenta: revisa los créditos y genera una API key nueva. Guárdala en un gestor de contraseñas. No la pegues en el chat, Kotlin ni Git.
+En [Authentication → Sign In / Providers](https://supabase.com/dashboard/project/ddzgaqjsoxsohkrsoowj/auth/providers), habilitar **Anonymous Sign-Ins** y guardar. El proveedor figura deshabilitado en `/auth/v1/settings` al momento de preparar la entrega. La integración autorizada no expone una operación para cambiarlo, y Brave no está conectado a Computer Use.
 
-## 2. Crear el proyecto Supabase
+La clave TinyFish fue mostrada en el chat/captura. Crear una nueva en TinyFish, guardarla como `TINYFISH_API_KEY` en Supabase → Edge Functions → Secrets y revocar la anterior. No pegarla aquí. No se puede dar por rotada sin comprobarlo.
 
-Entra al [Dashboard de Supabase](https://supabase.com/dashboard), selecciona tu organización y crea un proyecto llamado `tinyprice`. Usa el plan que hayas elegido, una región apropiada y una contraseña de base de datos que guardes en tu gestor. Espera a que el proyecto esté disponible.
+## Desplegar la versión protegida
 
-Copia el Project Ref desde los ajustes o la URL del Dashboard. Es el identificador público que sustituye `ddzgaqjsoxsohkrsoowj`. La app no usa tablas ni requiere migraciones SQL.
-
-## 3. Guardar el secreto
-
-En el proyecto abre **Edge Functions → Secrets**. Agrega el nombre `TINYFISH_API_KEY` y el valor que generaste en TinyFish. Guarda el secreto allí. No agregues la contraseña del Dashboard ni la de base de datos al proyecto Android.
-
-## 4. Despliegue (ya completado en esta sesión)
-
-Los comandos siguientes quedan como alternativa para futuros despliegues desde tu terminal:
-
-Desde la raíz de este repositorio:
+Con sesión CLI autorizada (o usando la integración de Supabase), después de activar el proveedor:
 
 ```sh
 npm ci
 npm run supabase -- login
 npm run supabase -- link --project-ref ddzgaqjsoxsohkrsoowj
+npm run supabase -- db push
+npm run supabase -- functions deploy delete-account --project-ref ddzgaqjsoxsohkrsoowj
 npm run supabase -- functions deploy search-products --project-ref ddzgaqjsoxsohkrsoowj
 ```
 
-El inicio de sesión necesita tu autorización en el navegador. La configuración `supabase/config.toml` conserva `verify_jwt = false`, como exige la función pública del laboratorio.
+Las dos migraciones de esta entrega ya se aplicaron en el proyecto. Antes de usar `db push`, revisar que el historial remoto y local coincidan. No reaplicar SQL manualmente ni borrar tablas.
 
-Para verificar que el secreto existe, sin imprimir su valor:
+`verify_jwt = false` desactiva únicamente la validación heredada del gateway; el código de cada función exige un token Bearer y lo valida en Supabase Auth. Una petición de búsqueda válida sin sesión debe devolver 401. No desplegar una versión que omita esa validación.
 
-```sh
-npm run supabase -- secrets list --project-ref ddzgaqjsoxsohkrsoowj
-```
+## Verificación final necesaria
 
-## 5. Comprobar el endpoint alojado
+Crear una única sesión anónima mediante `/auth/v1/signup` con la clave publicable del cliente; no registrar tokens. Buscar con `Authorization: Bearer <token>` y esperar 200. Verificar 401 sin token, 400 para consulta inválida y 204 para OPTIONS. Después enviar DELETE a `/functions/v1/delete-account` con el mismo token y comprobar 204 y rechazo posterior del token. Finalmente recorrer la app firmada, renovar sesión y eliminar los datos desde Privacidad.
 
-```sh
-curl --request POST \
-  'https://ddzgaqjsoxsohkrsoowj.supabase.co/functions/v1/search-products' \
-  --header 'Content-Type: application/json' \
-  --data '{"query":"Nintendo Switch OLED"}'
-```
+Los límites están en `private.tinyprice_limits`: 10 por minuto, 50 por día por sesión, 500 globales por día UTC. Para pausar: `update private.tinyprice_limits set enabled = false where id = true;` desde el SQL Editor autorizado. Solo el servidor puede reservar cuotas; no dar acceso de clientes a las tablas privadas ni a los RPC.
 
-Debe devolver 200 y un objeto con `offers` y `searchedAt`. Una lista vacía puede ser válida. Los campos de precio dicen «Ver en fuente»; abre el enlace para comprobarlos.
-
-Comprueba también consulta vacía (400), consulta de un carácter (400), más de 200 caracteres (400), JSON roto (400), GET (405) y OPTIONS (204). Sin secreto, una consulta válida devuelve 503 con `TINYFISH_NOT_CONFIGURED`. Un fallo del proveedor devuelve 502. El límite didáctico permite veinte solicitudes por minuto y devuelve 429 al excederlo en la misma instancia.
-
-Revisa **Edge Functions → search-products → Invocations/Logs**. Evita registrar cuerpos de solicitud, claves o cabeceras privadas. La función entrega errores controlados y no registra respuestas internas de TinyFish.
-
-## 6. Compilar Android contra Supabase
+## Compilar y distribuir
 
 ```sh
-./gradlew :app:assembleDebug \
-  -PuseRemoteDeals=true \
-  -PedgeRuntimeBaseUrl=https://ddzgaqjsoxsohkrsoowj.supabase.co/functions/v1
+./gradlew :app:assembleDebug -PuseRemoteDeals=true
+./gradlew :app:assembleRelease :app:bundleRelease
 ```
 
-Instala el APK resultante y recorre búsqueda, carga, resultados, detalle, fuente y regreso. Prueba sin conexión: debe aparecer un error legible y permitir reintentar. Cambia a otra consulta antes de terminar una búsqueda para comprobar que los resultados anteriores no se imponen.
-
-Puedes guardar estas dos propiedades públicas en tu configuración Gradle personal para ejecutar en modo remoto desde Android Studio. No guardes ahí la clave TinyFish.
-
-## 7. Cerrar los pendientes
-
-Después de obtener evidencia real, actualiza las casillas correspondientes de `falta.md` y registra qué comprobaste en `avanzado.md`. Para practicar rotación, genera otra clave en TinyFish, actualiza el secreto Supabase, realiza una búsqueda de control y revoca la clave anterior.
-
-La publicación en Play Console es una fase posterior: necesita cuenta, clave de firma propia, AAB, ficha de aplicación y revisión de privacidad. No se generó una firma de publicación ni se distribuyó la aplicación en una tienda.
-
-El endpoint público y su límite en memoria reproducen el laboratorio. Antes de distribuirlo ampliamente, completa autenticación, cuotas compartidas y protección de gasto.
+La firma requiere los archivos privados entregados por separado. El propietario confirmó que no tiene Play Console; no existe aún una pista interna. Ver `PUBLICACION.md`.

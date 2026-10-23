@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -8,7 +10,19 @@ val edgeRuntimeBaseUrl = providers.gradleProperty("edgeRuntimeBaseUrl")
     .get()
 val useRemoteDeals = providers.gradleProperty("useRemoteDeals").orNull == "true"
 
+val signingFile = rootProject.file("keystore.properties")
+val signingProperties = Properties().apply { if (signingFile.exists()) signingFile.inputStream().use { load(it) } }
+
 android {
+    signingConfigs {
+        if (signingFile.exists()) create("release") {
+            storeFile = rootProject.file(signingProperties.getProperty("storeFile"))
+            storePassword = signingProperties.getProperty("storePassword")
+            keyAlias = signingProperties.getProperty("keyAlias")
+            keyPassword = signingProperties.getProperty("keyPassword")
+            storeType = "PKCS12"
+        }
+    }
     namespace = "com.alejx.tiny_price"
     compileSdk {
         version = release(37)
@@ -18,9 +32,11 @@ android {
         applicationId = "com.alejx.tiny_price"
         minSdk = 23
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
+        buildConfigField("String", "SUPABASE_URL", "\"https://ddzgaqjsoxsohkrsoowj.supabase.co\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"sb_publishable_lqLtqNVmFj0CZUnGerM9SQ_UcCBfktV\"")
         // URL pública del proyecto; se puede sustituir mediante -PedgeRuntimeBaseUrl.
         buildConfigField("String", "EDGE_RUNTIME_BASE_URL", "\"$edgeRuntimeBaseUrl\"")
         // Keep preview data by default. Enable the hosted function with:
@@ -32,6 +48,8 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
+            buildConfigField("boolean", "USE_REMOTE_DEALS", "true")
             optimization {
                 enable = false
             }

@@ -1,4 +1,8 @@
-import { createSearchHandler, offerFromResult, normalizeApiKey } from "./search.ts";
+import { createSearchHandler as createHandler, offerFromResult, normalizeApiKey } from "./search.ts";
+
+function createSearchHandler(options: Omit<Parameters<typeof createHandler>[0], "authorize" | "reserveQuota">) {
+  return createHandler({ ...options, authorize: async () => ({ id: "test-user" }), reserveQuota: async () => ({ allowed: true }) });
+}
 
 function equal(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -122,4 +126,27 @@ Deno.test("a pasted setup prompt supplies one unambiguous key without executing 
   equal(normalizeApiKey(`TINYFISH_API_KEY=${key}`), key);
   equal(normalizeApiKey(`${key}\n${key}_different`), undefined);
   equal(normalizeApiKey("line one\nline two"), undefined);
+});
+
+Deno.test("authentication is mandatory before consuming quota or calling TinyFish", async () => {
+  const handle = createHandler({ apiKey: () => "test-only", fetcher: unreachable, authorize: async () => null,
+    reserveQuota: () => { throw new Error("Must not reserve without identity"); } });
+  equal((await handle(post({ query: "Switch" }))).status, 401);
+});
+Deno.test("persistent quota rejects the request with Retry-After before calling TinyFish", async () => {
+  const handle = createHandler({ apiKey: () => "test-only", fetcher: unreachable, authorize: async () => ({ id: "verified-user" }),
+    reserveQuota: async (id) => { equal(id, "verified-user"); return { allowed: false, retryAfter: 300 }; } });
+  const response = await handle(post({ query: "Switch" }));
+  equal(response.status, 429);
+  equal(response.headers.get("retry-after"), "300");
+});
+Deno.test("authentication and quota failures stop the search safely", async () => {
+  for (const failing of ["auth", "quota"]) {
+    const handle = createHandler({ apiKey: () => "test-only", fetcher: unreachable,
+      authorize: async () => { if (failing === "auth") throw new Error("private"); return { id: "verified-user" }; },
+      reserveQuota: async () => { throw new Error("private"); } });
+    const response = await handle(post({ query: "Switch" }));
+    equal(response.status, 503);
+    equal((await response.text()).includes("private"), false);
+  }
 });

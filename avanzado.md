@@ -121,3 +121,25 @@
 **Resultado final verificado:** 14 pruebas unitarias Android, 7 pruebas instrumentadas y 11 pruebas Deno aprobadas. Búsqueda real, carga, resultados, detalle, regreso, apertura del navegador y recuperación de red comprobados en el APK remoto. La página externa quedó en el onboarding de Chrome; no se aceptaron sus condiciones.
 
 **Pendientes conservados:** publicación/firma propia, actividad opcional Gemini, conexión de Brave, rotación del secreto y revisión de avisos preexistentes de base de datos. Las modificaciones del repositorio permanecen locales; no se hizo push a GitHub.
+
+## 2026-10-22 · Cierre de pendientes solicitado por el propietario
+
+**Qué hice:** guardé la app funcional en un commit de la rama `codex/complete-tinyprice-codelab`, comprobé permisos ADMIN en el repositorio y preparé la siguiente revisión para publicación.
+
+**Seguridad en implementación:** agregué validación de sesiones Supabase Auth, contadores persistentes y un máximo global diario. Android guarda la sesión cifrada con Android Keystore, fuera de backups, renueva tokens y ofrece eliminación de la sesión y datos. Los cambios del servidor no se activarán hasta verificar la configuración y el cliente correspondiente.
+
+**Por qué:** el propietario pidió completar también las mejoras previas a publicación que figuraban en `falta.md`. Los límites de uso dejarán de depender únicamente de la memoria de una función.
+
+## Protección, firma y preparación de publicación (22 octubre local / 23 UTC)
+
+- Se aplicaron dos migraciones para cuotas persistentes y exclusivas del servidor. La reserva se serializa para evitar superar los topes con peticiones concurrentes. Se corrigió un conflicto de nombre con la hora SQL detectado en la primera prueba mediante una segunda migración, preservando el historial.
+- Las pruebas SQL verificaron minuto, día, presupuesto global, pausa, eliminación y denegación a anon/authenticated. Supabase Advisors de seguridad quedó sin avisos tras restringir `public.rls_auto_enable()` y definir políticas privadas.
+- Se implementaron sesiones de invitado, renovación, validación del token en el servidor, almacenamiento Android cifrado fuera de backups y eliminación de datos. Se conserva el contador global al borrar una sesión para que no se evada ese tope.
+- Se generó una clave de subida RSA 3072 y se compilaron APK/AAB release firmados. La clave y sus contraseñas se excluyeron de Git y tienen copia privada separada.
+- Se prepararon política de privacidad, ficha y guía de publicación. El propietario confirmó que todavía no tiene Play Console, por lo que no se afirma una publicación en Google Play.
+- Se agregó verificación continua en GitHub Actions sin secretos de producción.
+- El proveedor Anonymous Sign-Ins sigue deshabilitado. No se sustituyó aún el endpoint funcional del laboratorio por el protegido para evitar cortar el acceso antes de habilitar las sesiones. Esta transición y sus pruebas reales continúan pendientes.
+
+### Pruebas y despliegue parcial de seguridad
+
+Las 20 pruebas unitarias Android y las 8 instrumentadas pasaron, incluida la verificación de Keystore. Las 17 pruebas Deno y tipos de ambas funciones pasaron. Se desplegó `delete-account` versión 1 y se verificaron 204/405/401; la búsqueda del laboratorio permanece operativa hasta habilitar el proveedor. El APK release tiene firma v1/v2 válida.

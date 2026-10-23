@@ -1,6 +1,7 @@
 package com.alejx.tiny_price.data.repository
 
 import com.alejx.tiny_price.data.remote.*
+import com.alejx.tiny_price.data.session.SessionProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,7 +18,7 @@ class RemoteDealsRepositoryTest {
                 ProductOfferDto(id = "$it", productName = "Switch", sourceUrl = "https://example.com/$it")
             }))
         }
-        val offers = RemoteDealsRepository(api).search("Switch")
+        val offers = RemoteDealsRepository(api, sessionProvider = session).search("Switch")
         assertEquals(10, offers.size)
         assertEquals("Ver en fuente", offers.first().price)
         assertEquals("https://example.com/0", offers.first().sourceUrl)
@@ -26,7 +27,7 @@ class RemoteDealsRepositoryTest {
     @Test fun preservesControlledJsonErrors() = runTest {
         val repository = RemoteDealsRepository(api {
             Response.error(503, """{"error":"La búsqueda aún no está configurada."}""".toResponseBody("application/json".toMediaType()))
-        })
+        }, sessionProvider = session)
         try {
             repository.search("Switch")
             fail("Expected RemoteSearchException")
@@ -38,7 +39,7 @@ class RemoteDealsRepositoryTest {
     @Test fun rawProviderBodiesAreNotShownToTheUser() = runTest {
         val repository = RemoteDealsRepository(api {
             Response.error(502, "private-internal-body".toResponseBody("text/plain".toMediaType()))
-        })
+        }, sessionProvider = session)
         try {
             repository.search("Switch")
             fail("Expected RemoteSearchException")
@@ -48,7 +49,7 @@ class RemoteDealsRepositoryTest {
     }
 
     @Test fun cancellationIsNeverConvertedIntoNetworkFailure() = runTest {
-        val repository = RemoteDealsRepository(api { throw CancellationException("cancelled") })
+        val repository = RemoteDealsRepository(api { throw CancellationException("cancelled") }, sessionProvider = session)
         try {
             repository.search("Switch")
             fail("Expected CancellationException")
@@ -63,8 +64,14 @@ class RemoteDealsRepositoryTest {
         assertTrue(PreviewDealsRepository.search("not-a-demo-product").isEmpty())
     }
 
+    private val session = object : SessionProvider {
+        override suspend fun accessToken() = "test-session"
+        override suspend fun invalidate() = Unit
+        override suspend fun deleteAccount() = Unit
+    }
+
     private fun api(block: suspend (SearchProductsRequest) -> Response<SearchProductsResponse>) =
         object : TinyPriceApi {
-            override suspend fun searchProducts(request: SearchProductsRequest) = block(request)
+            override suspend fun searchProducts(request: SearchProductsRequest, authorization: String) = block(request)
         }
 }

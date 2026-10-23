@@ -22,3 +22,10 @@ local.properties
 node_modules/
 supabase/.temp/
 supabase/.branches/
+
+# Material de firma privado
+.signing/
+keystore.properties
+*.jks
+*.keystore
+*.p12

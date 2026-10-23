@@ -10,7 +10,8 @@ Este archivo se creó antes de implementar cambios. Cada casilla representa trab
 - [x] Verificar Java 25, Gradle 9.6.0 y SDK 37.
 - [x] Contar con emulador operativo: Pixel 9 Pro API 35 con datos temporales separados.
 - [x] Instalar/verificar Android CLI y la skill oficial `android-cli` del proyecto.
-- [ ] Completar la actividad opcional de Gemini CLI y verificar activación de la skill.
+- [x] Instalar Gemini CLI 0.65.0 en herramientas locales.
+- [ ] Completar inicio de sesión Google y actividad opcional de activación de la skill en Gemini.
 - [x] Crear cuenta TinyFish con Google (confirmado por el propietario).
 - [ ] Revisar créditos y reemplazar la API key mostrada en la captura.
 - [x] Probar TinyFish Search desde Supabase y comprobar su respuesta real.
@@ -52,11 +53,17 @@ Este archivo se creó antes de implementar cambios. Cada casilla representa trab
 - [x] Verificar búsqueda, detalle, regreso y recuperación de red con Reintentar en el APK remoto.
 - [x] Verificar ausencia de patrones de claves TinyFish en los archivos entregables y revisar cambios.
 - [x] Probar manualmente el APK remoto con resultados reales tras configurar el secreto.
-- [ ] Preparar firma y publicación en pista interna, si se dispone de cuenta de Play Console.
+- [x] Preparar firma privada, APK y AAB release firmados.
+- [ ] Publicar en pista interna: el propietario confirmó que no tiene cuenta de Play Console.
 
 ## Mejoras previas a producción (fuera del laboratorio básico)
-- [ ] Añadir autenticación, cuotas persistentes por usuario y protección de gasto antes de exposición pública real.
-- [ ] Confirmar privacidad, condiciones, tratamiento de datos y ficha de Play Store antes de publicación.
+- [x] Implementar autenticación de invitado y tokens cifrados en Android.
+- [x] Aplicar migraciones y probar cuotas persistentes y tope global de gasto.
+- [x] Implementar eliminación de cuenta/datos y desplegar `delete-account` versión 1.
+- [ ] Habilitar Anonymous Sign-Ins (ajuste del propietario) y desplegar `search-products` protegido.
+- [ ] Probar en vivo búsqueda autenticada, renovación y eliminación desde el APK firmado.
+- [x] Preparar política de privacidad y ficha de publicación.
+- [ ] Revisar con el propietario las declaraciones de datos, condiciones y contacto antes de enviar a Play.
 
 ## Dependencias externas
 Las tareas de cuenta, secreto, proyecto remoto y publicación requieren acceso a los servicios del propietario. No se considerarán terminadas solo por escribir instrucciones o pruebas simuladas.
@@ -72,4 +79,14 @@ Computer Use se consultó directamente y solo devuelve el navegador interno y MC
 - [ ] Subir los cambios a GitHub cuando se solicite publicar esta entrega.
 
 ## Revisión adicional del proyecto existente
-- [ ] Revisar los avisos de Supabase Advisors sobre permisos de ejecución de `public.rls_auto_enable()`; detalles y enlaces en `docs/PRUEBAS.md`.
+- [x] Corregir permisos de `public.rls_auto_enable()`; Supabase Advisors de seguridad ya no informa avisos.
+
+## Ampliación y entrega final
+- [x] Ejecutar 20 pruebas unitarias Android y 8 instrumentadas (incluido cifrado con Keystore), cero fallos.
+- [x] Ejecutar 17 pruebas Deno y comprobación de tipos de ambas funciones, cero fallos.
+- [x] Validar restricciones SQL: minuto, día, global, pausa, eliminación y permisos.
+- [x] Verificar firma RSA 3072 del APK release; mantener copia privada fuera de Git.
+- [x] Preparar flujo de GitHub Actions para compilar, analizar y ejecutar pruebas.
+- [ ] Verificar GitHub Actions en el repositorio remoto y publicar la política de privacidad.
+
+El nuevo APK firmado 1.1 requiere completar la transición segura descrita en `docs/CONEXION_REAL.md`; no se declara validado en vivo mientras Anonymous Sign-Ins siga deshabilitado. El APK remoto del laboratorio entregado antes continúa disponible por separado.

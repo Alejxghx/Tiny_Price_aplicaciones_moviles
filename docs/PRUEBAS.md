@@ -13,9 +13,9 @@ Entorno comprobado: OpenJDK 25, Gradle Wrapper 9.6.0, Android Gradle Plugin 9.4.
 ```
 
 - Compilación debug: correcta.
-- Pruebas unitarias: 14 aprobadas, 0 fallidas. Incluyen validación, carga, resultados, errores, sugerencias, detalle/regreso, cancelación con consulta inválida, búsquedas consecutivas, mapeo remoto y manejo de errores JSON.
+- Pruebas unitarias: 20 aprobadas, 0 fallidas. Incluyen validación, carga, resultados, errores, sugerencias, detalle/regreso, cancelación con consulta inválida, búsquedas consecutivas, mapeo remoto y manejo de errores JSON.
 - Android Lint: correcto, sin errores. Se conservan 27 advertencias sobre versiones disponibles, recursos de la plantilla, compatibilidad de atributos de iconos y sugerencias menores. No se hicieron actualizaciones de dependencias aisladas fuera del conjunto del codelab.
-- Pruebas instrumentadas: **7 aprobadas, 0 fallidas**, en Pixel 9 Pro API 35. Los fallos iniciales de arranque/autorización se resolvieron usando una partición de datos temporal en `work/`, sin borrar la del propietario.
+- Pruebas instrumentadas: **8 aprobadas, 0 fallidas**, en Pixel 9 Pro API 35. Los fallos iniciales de arranque/autorización se resolvieron usando una partición de datos temporal en `work/`, sin borrar la del propietario.
 ```sh
 ./gradlew :app:connectedDebugAndroidTest
 ```
@@ -30,7 +30,7 @@ npm run check
 npm test
 ```
 
-Comprobación de tipos Deno correcta. Once pruebas aprobadas sin red ni claves reales:
+Comprobación de tipos Deno correcta. Diecisiete pruebas aprobadas sin red ni claves reales:
 
 1. CORS y métodos HTTP.
 2. JSON roto y tipos/longitudes de consulta inválidos.
@@ -85,6 +85,16 @@ La clave de TinyFish visible en las capturas y en el mensaje de onboarding no se
 - Se guardaron y revisaron visualmente `evidencias/resultados-remotos.png`, `evidencias/detalle-remoto.png` y `evidencias/sin-conexion.png`.
 - Al desactivar Wi-Fi/datos del emulador, la búsqueda mostró el mensaje de conexión y el botón Reintentar. Se restauraron ambas conexiones y, tras pulsar Reintentar con la conexión validada, reaparecieron los seis resultados reales.
 
-## Avisos existentes del proyecto
+## Ampliación de seguridad y firma
 
-Supabase Advisors no devolvió avisos de rendimiento. Informó permisos de ejecución públicos para la función existente `public.rls_auto_enable()`. No se modificó la base de datos porque la app no la utiliza. Revisión posterior: [permiso anon](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) y [permiso authenticated](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+Se añadieron seis pruebas de sesiones: caché, renovación, refresh inválido, error temporal, concurrencia y borrado confirmado antes de limpiar. La octava prueba instrumentada verifica cifrado real con Android Keystore, almacenamiento fuera de backups y eliminación del fichero. Los informes XML registran 20 unitarias y 8 instrumentadas sin fallos.
+
+Deno ahora ejecuta 17 pruebas: las once originales, tres de autenticación/cuota y tres de eliminación (exige sesión, solo identidad verificada, error sanitizado). Se comprueban tipos de las dos funciones.
+
+`supabase/tests/quota.sql` se ejecutó en el proyecto real dentro de transacción con rollback. Se comprobaron topes por minuto/día, global entre usuarios, pausa, eliminación individual sin reiniciar global, y permisos denegados a anon/authenticated. La segunda migración corrigió el nombre de una variable SQL detectado por esas pruebas.
+
+Supabase Advisors de seguridad devuelve lista vacía tras corregir permisos de `public.rls_auto_enable()` y políticas privadas. `delete-account` versión 1 está ACTIVE; OPTIONS 204, GET 405 y DELETE sin sesión 401 se verificaron en vivo. El borrado de un usuario real queda pendiente de activar Anonymous Sign-Ins.
+
+APK y AAB release compilados. `apksigner verify` confirma firmas v1 y v2 y clave RSA de 3072 bits. SHA-256 del certificado: `62fcde7297f4cc87b9ab1fafb73a24165f3c1a72517d67ac0d465ef8266ff8a3`. La firma privada no se incluye en Git ni en el ZIP de fuentes.
+
+La configuración Auth pública aún devuelve `anonymous_users:false`. Por eso no se sustituyó la función del laboratorio y no se declara probada la búsqueda autenticada en producción. El APK 1.1 debe distribuirse después de completar `CONEXION_REAL.md`.

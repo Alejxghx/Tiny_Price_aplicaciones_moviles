@@ -7,6 +7,9 @@ const corsHeaders = {
 
 type Dependencies = {
   apiKey: () => string | undefined;
+  authorize: (request: Request) => Promise<{ id: string } | null>;
+  reserveQuota: (userId: string) => Promise<{ allowed: boolean; retryAfter?: number }>;
+
   fetcher?: typeof fetch;
   now?: () => number;
   timeoutMs?: number;
@@ -53,7 +56,7 @@ export function normalizeApiKey(raw: string | undefined): string | undefined {
 }
 
 export function createSearchHandler({
-  apiKey, fetcher = fetch, now = Date.now, timeoutMs = 15_000,
+  apiKey, authorize, reserveQuota, fetcher = fetch, now = Date.now, timeoutMs = 15_000,
 }: Dependencies) {
   // Límite didáctico por instancia. No sustituye cuotas compartidas de producción.
   const requestTimes = new Map<string, number[]>();
@@ -87,6 +90,23 @@ export function createSearchHandler({
     }
     if (query.length < 2 || query.length > 200) {
       return json({ error: "La búsqueda debe tener entre 2 y 200 caracteres." }, 400);
+    }
+    let identity: { id: string } | null;
+    try {
+      identity = await authorize(request);
+    } catch {
+      return json({ code: "AUTH_UNAVAILABLE", error: "La búsqueda no está disponible. Inténtalo más tarde." }, 503);
+    }
+    if (!identity) return json({ code: "AUTH_REQUIRED", error: "Tu sesión venció. Vuelve a intentarlo." }, 401);
+    try {
+      const quota = await reserveQuota(identity.id);
+      if (!quota.allowed) {
+        const response = json({ code: "SEARCH_QUOTA_EXCEEDED", error: "Alcanzaste el límite de búsquedas. Inténtalo más tarde." }, 429);
+        response.headers.set("Retry-After", String(quota.retryAfter ?? 60));
+        return response;
+      }
+    } catch {
+      return json({ code: "QUOTA_UNAVAILABLE", error: "La búsqueda no está disponible. Inténtalo más tarde." }, 503);
     }
     const key = normalizeApiKey(apiKey());
     if (!key) return json({ code: "TINYFISH_NOT_CONFIGURED", error: "La búsqueda en vivo aún no está configurada." }, 503);

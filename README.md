@@ -1,85 +1,69 @@
 # TinyPrice
 
-Aplicación Android del [codelab TinyPrice](https://epanchanaf.github.io/tinyprice-codelab/#step-0), adaptada al repositorio de Alejxghx. Conserva `com.alejx.tiny_price` y el wrapper original.
+Aplicación Android del [codelab TinyPrice](https://epanchanaf.github.io/tinyprice-codelab/#step-0), adaptada a `com.alejx.tiny_price`. Incluye demo sin conexión, búsqueda web, carga, resultados, vacío, error, detalle y apertura de fuentes.
 
-## Estado de la entrega
+## Estado
 
-La app incluye búsqueda demo, estados de carga/resultados/vacío/error, detalle, regreso y enlaces a fuentes web. El repositorio remoto está preparado y la Edge Function está activa en Supabase. **Búsqueda real verificada: Supabase devuelve HTTP 200 con fuentes de TinyFish. La función está activa en versión 4 y el secreto está configurado.**
+El recorrido del laboratorio se verificó con búsquedas reales en Supabase y TinyFish. Esta entrega agrega sesiones de invitado cifradas, cuotas persistentes, eliminación de datos, firma de publicación y verificación continua.
 
-- `avanzado.md`: cambios, motivos y resultados de verificación.
-- `falta.md`: lista completa creada antes de implementar; las tareas externas siguen sin marcar.
-- `docs/CONEXION_REAL.md`: pasos para conectar tus cuentas.
-- `docs/PRUEBAS.md`: comandos y evidencia de calidad.
+**La ampliación de seguridad está preparada, pero su activación alojada depende de habilitar Anonymous Sign-Ins en Supabase.** Ese proveedor sigue deshabilitado al cierre de la preparación. No se declara probado el nuevo recorrido remoto completo. El endpoint del laboratorio sigue en versión 4 hasta completar la transición. El APK firmado 1.1 requiere habilitar el proveedor y desplegar las dos funciones nuevas antes de distribuirlo.
 
-## Abrir y ejecutar la demo
+- [avanzado.md](avanzado.md): cambios, motivos y pruebas.
+- [falta.md](falta.md): pendientes reales y dependencias externas.
+- [Conexión](docs/CONEXION_REAL.md), [pruebas](docs/PRUEBAS.md), [publicación](docs/PUBLICACION.md) y [privacidad](docs/PRIVACIDAD.md).
 
-Abre esta carpeta en Android Studio. Usa JDK 25 (el repositorio ya tiene ese criterio de daemon), SDK Platform 37 y un teléfono/emulador con Android 6.0/API 23 o posterior. El código genera bytecode Java 11.
+## Ejecutar
 
-Si compilas desde terminal, configura `ANDROID_HOME` con la ruta de tu SDK o deja que Android Studio genere `local.properties`. Ese archivo está ignorado por Git.
+Abre esta carpeta en Android Studio con JDK 25, SDK Platform 37 y Android 6.0/API 23 o posterior. Se genera bytecode Java 11. Configura `ANDROID_HOME` o deja que Studio cree `local.properties` (ignorado por Git).
 
 ```sh
-./gradlew :app:assembleDebug
-./gradlew :app:testDebugUnitTest
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :app:connectedDebugAndroidTest
 ```
 
-En Windows usa `gradlew.bat`. Para instalar, selecciona tu dispositivo en Android Studio y pulsa Run. El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
+En Windows usa `gradlew.bat`. Debug muestra por defecto tres ofertas ficticias de Nintendo Switch OLED. «Audífonos» permite probar el estado vacío. No se abren dominios de ejemplo como si fueran tiendas reales.
 
-La demo tiene tres ofertas ficticias de Nintendo Switch OLED. Prueba la sugerencia de ese nombre; «Audífonos» y «Laptop gamer» permiten probar el estado vacío. Los importes y tiendas demo son ficticios. Sus dominios de ejemplo no se abren como fuentes reales.
+Para activar la conexión remota después de completar su configuración:
 
-## Arquitectura
+```sh
+./gradlew :app:assembleDebug -PuseRemoteDeals=true
+```
 
-`Compose → DealsViewModel/StateFlow → DealsRepository`
+Release siempre usa conexión remota. La URL de Supabase y su clave publicable son públicas; la clave TinyFish y las credenciales de servicio permanecen en el servidor. No copies la clave TinyFish a Kotlin ni al repositorio.
 
-- `PreviewDealsRepository`: datos locales sin conexión.
-- `RemoteDealsRepository`: Retrofit/Gson y corrutinas; llama únicamente a Supabase.
-- `supabase/functions/search-products/index.ts`: arranque de la función.
-- `supabase/functions/search-products/search.ts`: validación, límite por instancia, TinyFish y mapeo.
+## Arquitectura y seguridad preparada
 
-La app envía `POST /search-products` con `{"query":"Switch OLED"}`. La respuesta contiene `query`, `offers` y `searchedAt`. Se muestran hasta diez resultados. TinyFish Search no garantiza precios normalizados: los resultados reales dicen «Ver en fuente».
+`Compose → DealsViewModel/StateFlow → DealsRepository → Supabase → TinyFish`
 
-## Herramientas y pruebas del servidor
+- Demo local: `PreviewDealsRepository`.
+- Red: Retrofit/Gson, cancelación y errores controlados.
+- Sesiones: Supabase Auth anónimo, renovación y almacenamiento AES/GCM con Android Keystore, excluido de backups.
+- Servidor: `search-products` valida al usuario mediante Auth antes de reservar cuota y llamar a TinyFish.
+- Postgres: límites atómicos de 10/minuto y 50/día por invitado, y 500/día globales (UTC), configurables en `private.tinyprice_limits`.
+- Eliminación: `delete-account` solo borra al usuario autenticado y sus contadores; conserva el agregado global para que recrear la sesión no reinicie el presupuesto.
 
-Usa Node.js 20 o superior:
+Una sesión de invitado puede recrearse y no acredita una identidad real. El límite global acota solicitudes a TinyFish, pero no garantiza un importe monetario: revisa precios y créditos del proveedor. Los resultados dicen «Ver en fuente», sin inventar precios.
+
+## Servidor y verificación continua
 
 ```sh
 npm ci
 npm run check
 npm test
-npm run supabase -- --version
 ```
 
-Las pruebas Deno se ejecutan sin credenciales ni acceso a Internet. El lockfile conserva las versiones instaladas. Deno y Supabase CLI son herramientas de desarrollo; no se incluyen en el APK.
+Pruebas Deno sin red ni secretos. `supabase/tests/quota.sql` verifica límites, pausa, eliminación y permisos dentro de una transacción con rollback. Las migraciones aplicadas están en `supabase/migrations/`. GitHub Actions compila y revisa Android y ejecuta las pruebas locales de servidor sin credenciales.
 
-## Activar el repositorio remoto
+## Firma y entrega
 
-Después de desplegar y comprobar el endpoint, compila sustituyendo `YOUR_PROJECT_REF`:
+Los APK/AAB firmados y la copia privada de la firma se entregan por separado. `.signing/` y `keystore.properties` están ignorados. Nunca subas el respaldo de firma a GitHub ni a una release pública. Consulta [publicación](docs/PUBLICACION.md).
 
-```sh
-./gradlew :app:assembleDebug \
-  -PuseRemoteDeals=true \
-  -PedgeRuntimeBaseUrl=https://YOUR_PROJECT_REF.supabase.co/functions/v1
-```
+## Android CLI y Gemini
 
-La propiedad contiene la URL base; no agregues `/search-products`. Para regresar a la demo:
+La skill oficial está en `.agents/skills/android-cli/SKILL.md`. Android CLI 1.0.16625370 se utilizó con el emulador. La sintaxis actual para instalar la skill es `android skills add android-cli --project=.`.
 
-```sh
-./gradlew :app:assembleDebug -PuseRemoteDeals=false
-```
-
-No se necesitan claves de Supabase en Android para esta función pública del laboratorio. `TINYFISH_API_KEY` se configura exclusivamente como secreto en Supabase.
-
-## Android CLI y actividad opcional de Gemini
-
-La skill oficial queda versionada en `.agents/skills/android-cli/SKILL.md`. En esta sesión Android CLI se preparó en la carpeta de trabajo, sin cambiar tu PATH global. Para instalarlo permanentemente consulta el instalador oficial enlazado por el codelab.
-
-La sintaxis actual comprobada es:
-
-```sh
-android skills add android-cli --project=.
-```
-
-Con CLI 1.0.16625370 hay que indicar el nombre y no se generan el lockfile ni las referencias que describe la guía. Gemini CLI es opcional; su instalación/inicio de sesión y la activación de la skill en Gemini quedan como actividad pendiente del propietario.
+Gemini CLI 0.65.0 se instaló en la carpeta de herramientas local. La autenticación en Google y una ejecución con el modelo no se consideran completadas sin evidencia. La instalación no requiere incluir tokens en el proyecto.
 
 ## Referencia
 
-La implementación se adaptó del [código completo del codelab](https://github.com/epanchanaf/tinyprice-codelab/tree/main/reference), conservando su separación de capas y agregando pruebas y correcciones de cancelación, validación y manejo de errores.
+Adaptado del [código oficial del codelab](https://github.com/epanchanaf/tinyprice-codelab/tree/main/reference), conservando sus capas y ampliando validación, cancelación, pruebas y protección del servidor.

@@ -8,6 +8,8 @@ import com.alejx.tiny_price.data.remote.TinyPriceApi
 import com.alejx.tiny_price.data.remote.TinyPriceApiFactory
 import com.alejx.tiny_price.data.remote.toProductOffer
 import com.google.gson.Gson
+import com.alejx.tiny_price.data.session.SessionProvider
+import com.alejx.tiny_price.data.session.SessionRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,12 +18,18 @@ import retrofit2.Response
 class RemoteDealsRepository(
     private val api: TinyPriceApi = TinyPriceApiFactory.create(),
     private val gson: Gson = Gson(),
+    private val sessionProvider: SessionProvider = SessionRegistry.get(),
 ) : DealsRepository {
     override val isPreviewData = false
 
     override suspend fun search(query: String): List<ProductOffer> = withContext(Dispatchers.IO) {
         try {
-            val response = api.searchProducts(SearchProductsRequest(query))
+            var response = api.searchProducts(SearchProductsRequest(query), "Bearer ${sessionProvider.accessToken()}")
+            if (response.code() == 401) {
+                response.errorBody()?.close()
+                sessionProvider.invalidate()
+                response = api.searchProducts(SearchProductsRequest(query), "Bearer ${sessionProvider.accessToken()}")
+            }
             if (!response.isSuccessful) throw RemoteSearchException(response.errorMessage())
             val body = response.body() ?: throw RemoteSearchException("El servidor devolvió una respuesta vacía.")
             body.offers.take(10).map { it.toProductOffer() }

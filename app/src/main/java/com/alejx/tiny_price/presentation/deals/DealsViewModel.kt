@@ -31,6 +31,7 @@ sealed interface DealsEvent {
     data class UseSuggestion(val value: String) : DealsEvent
     data class OpenOffer(val offer: ProductOffer) : DealsEvent
     data object Back : DealsEvent
+    data object Reset : DealsEvent
 }
 
 class DealsViewModel(
@@ -49,6 +50,10 @@ class DealsViewModel(
                 search(event.value)
             }
             is DealsEvent.OpenOffer -> _state.update { it.copy(selectedOffer = event.offer) }
+            DealsEvent.Reset -> {
+                searchJob?.cancel()
+                _state.value = DealsUiState(isPreviewData = repository.isPreviewData)
+            }
             DealsEvent.Back -> _state.update { it.copy(selectedOffer = null) }
         }
     }

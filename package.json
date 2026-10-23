@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "deno test supabase/functions/search-products/search_test.ts",
-    "check": "deno check supabase/functions/search-products/index.ts",
+    "test": "deno test supabase/functions/search-products/search_test.ts supabase/functions/delete-account/delete_test.ts",
+    "check": "deno check supabase/functions/search-products/index.ts supabase/functions/delete-account/index.ts",
     "supabase": "supabase"
   },
   "devDependencies": {
