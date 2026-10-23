@@ -13,3 +13,12 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Credenciales y herramientas locales
+.env
+.env.*
+!.env.example
+**/build/
+node_modules/
+supabase/.temp/
+supabase/.branches/

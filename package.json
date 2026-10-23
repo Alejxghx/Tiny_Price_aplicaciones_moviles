@@ -1,0 +1,14 @@
+{
+  "name": "tinyprice-lab",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "deno test supabase/functions/search-products/search_test.ts",
+    "check": "deno check supabase/functions/search-products/index.ts",
+    "supabase": "supabase"
+  },
+  "devDependencies": {
+    "deno": "2.9.6",
+    "supabase": "2.121.0"
+  }
+}
