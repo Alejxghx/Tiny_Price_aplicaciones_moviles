@@ -1,47 +1,37 @@
 package com.alejx.tiny_price
 
 import android.os.Bundle
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import com.alejx.tiny_price.presentation.deals.PrivacyControls
+import com.alejx.tiny_price.presentation.deals.DealsEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.alejx.tiny_price.ui.theme.Tiny_PriceTheme
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.alejx.tiny_price.presentation.deals.DealsApp
+import com.alejx.tiny_price.presentation.deals.DealsViewModel
+import com.alejx.tiny_price.ui.theme.TinyPriceTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: DealsViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Tiny_PriceTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            val state by viewModel.state.collectAsStateWithLifecycle()
+            TinyPriceTheme {
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.weight(1f)) { DealsApp(state = state, onEvent = viewModel::onEvent) }
+                    Box(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+                        PrivacyControls { viewModel.onEvent(DealsEvent.Reset) }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Tiny_PriceTheme {
-        Greeting("Android")
     }
 }
