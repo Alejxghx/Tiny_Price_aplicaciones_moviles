@@ -143,3 +143,7 @@
 ### Pruebas y despliegue parcial de seguridad
 
 Las 20 pruebas unitarias Android y las 8 instrumentadas pasaron, incluida la verificación de Keystore. Las 17 pruebas Deno y tipos de ambas funciones pasaron. Se desplegó `delete-account` versión 1 y se verificaron 204/405/401; la búsqueda del laboratorio permanece operativa hasta habilitar el proveedor. El APK release tiene firma v1/v2 válida.
+
+### GitHub y revisión continua
+
+La rama se publicó y se abrió el PR #1 en borrador. La primera ejecución de CI detectó que setup-android pedía el paquete retirado `tools`; se cambió a `platform-tools` antes de repetir. Se habilitó GitHub Pages para la política en la carpeta docs de esta rama.
