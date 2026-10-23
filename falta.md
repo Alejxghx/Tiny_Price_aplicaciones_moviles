@@ -92,3 +92,8 @@ Computer Use se consultó directamente y solo devuelve el navegador interno y MC
 El nuevo APK firmado 1.1 requiere completar la transición segura descrita en `docs/CONEXION_REAL.md`; no se declara validado en vivo mientras Anonymous Sign-Ins siga deshabilitado. El APK remoto del laboratorio entregado antes continúa disponible por separado.
 
 - [x] Preparar informe Word en español con doce capturas de interfaces ejecutadas y sus explicaciones.
+
+## Ajuste del informe al formato del propietario
+- [x] Revisar portada, tipografía y distribución de Tiny_Price.docx.
+- [x] Aplicar el formato de referencia y títulos/subtítulos rojos al informe con capturas.
+- [x] Revisar visualmente todas las páginas y actualizar la entrega en main.

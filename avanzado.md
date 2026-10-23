@@ -153,3 +153,11 @@ La primera ejecución de CI detectó que setup-android pedía el paquete retirad
 Se preparó un informe Word en español de ocho páginas con doce capturas reales: inicio, validación, carga, vacío, resultados y detalle demo, resultados y detalle remotos, errores, privacidad y confirmación de eliminación. Las capturas de estados controlados se obtuvieron durante pruebas instrumentadas; se distinguen de las búsquedas reales. Las ocho pruebas instrumentadas volvieron a pasar tras agregar la captura de evidencia. El informe se revisó mediante renderizado de todas sus páginas para comprobar legibilidad y distribución.
 
 Por solicitud del propietario, la entrega se consolida directamente en main mediante un commit en español. No se reescribe el commit inicial del proyecto.
+
+## 23 de octubre de 2026 Ajuste al formato académico
+
+Se adaptó el informe a la portada proporcionada en Tiny_Price.docx, manteniendo el logotipo de Uleam, facultad, carrera, nivel, materia, autor, tutor y ciudad. El tema se completó con Desarrollo de la aplicación TinyPrice. Se conservaron el tamaño A4, márgenes, letra Times New Roman, encabezados y pies de la referencia.
+
+Los títulos y subtítulos se cambiaron a rojo por solicitud del propietario. El informe conserva las doce capturas y sus explicaciones, y ahora tiene nueve páginas al incorporar la portada institucional. No se alteraron los resultados de las pruebas ni los pendientes externos.
+
+Se revisaron visualmente las nueve páginas y se comprobó que las partes del logotipo, encabezados y pies permanecen idénticas a la referencia. El archivo original de Descargas no se modificó. La copia revisada reemplaza la entrega anterior en main, con mensaje de commit en español.
